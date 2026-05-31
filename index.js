@@ -16,6 +16,9 @@ const client = createClient();
 const app = express();
 const port = 3000;
 
+const cors = require('cors');
+app.use(cors()); 
+
 async function redisConnect(){
     try{
     await client.connect()
@@ -32,7 +35,7 @@ const limiter = rateLimit({
     max: 60, 
     message: { error: "Too many requests, please try again later." }
 });
-
+app.use(limiter);
 const API_KEY = process.env.WEATHER_API_KEY
 
 app.get('/', (req,res)=>{

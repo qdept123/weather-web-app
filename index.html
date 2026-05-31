@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-900 text-white flex items-center justify-center min-h-screen font-sans">
+
+    <div class="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md text-center border border-slate-700">
+        <h1 class="text-3xl font-bold mb-6 text-blue-400">Weather Dashboard</h1>
+        
+        <form id="weatherForm" class="flex gap-2 mb-6">
+            <input 
+                type="text" 
+                id="cityInput" 
+                placeholder="Enter city name..." 
+                required
+                class="flex-1 px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 focus:outline-none focus:border-blue-400 text-white placeholder-slate-400"
+            >
+            <button 
+                type="submit" 
+                class="bg-blue-500 hover:bg-blue-600 px-6 py-2 rounded-lg font-medium transition duration-200 cursor-pointer"
+            >
+                Search
+            </button>
+        </form>
+
+        <div id="weatherResult" class="hidden space-y-4">
+            <div>
+                <h2 id="cityName" class="text-2xl font-semibold text-slate-100">---</h2>
+                <p id="weatherDesc" class="text-slate-400 capitalize">---</p>
+            </div>
+            
+            <div class="text-5xl font-extrabold text-blue-300 py-2">
+                <span id="temp">--</span>°C
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 bg-slate-700/50 p-4 rounded-xl text-sm text-slate-300 mt-4">
+                <div>
+                    <span class="block text-slate-400">Feels Like</span>
+                    <strong id="feelsLike" class="text-base text-white">--°C</strong>
+                </div>
+                <div>
+                    <span class="block text-slate-400">Humidity</span>
+                    <strong id="humidity" class="text-base text-white">--%</strong>
+                </div>
+            </div>
+        </div>
+
+        <div id="message" class="text-slate-400 mt-4 hidden"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('weatherForm');
+        const cityInput = document.getElementById('cityInput');
+        const resultDiv = document.getElementById('weatherResult');
+        const messageDiv = document.getElementById('message');
+
+        // Backend API URL
+        const API_BASE_URL = 'http://localhost:3000/api/weather';
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const city = cityInput.value.trim();
+            if (!city) return;
+
+            // Show loading state
+            messageDiv.textContent = "Fetching weather data...";
+            messageDiv.classList.remove('hidden', 'text-red-400');
+            messageDiv.classList.add('text-slate-400');
+            resultDiv.classList.add('hidden');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/${city}`);
+
+                // 1. First verify if the backend successfully process the response
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Server Error (Status: ${response.status})`);
+                }
+
+                // 2. Only map values after receiving a clean 200 OK status code 
+                const data = await response.json();
+
+                // Inject data into the DOM (Mapping OpenWeatherMap object schema)
+                document.getElementById('cityName').textContent = `${data.name}, ${data.sys.country}`;
+                document.getElementById('weatherDesc').textContent = data.weather[0].description;
+                document.getElementById('temp').textContent = Math.round(data.main.temp);
+                document.getElementById('feelsLike').textContent = `${Math.round(data.main.feels_like)}°C`;
+                document.getElementById('humidity').textContent = `${data.main.humidity}%`;
+
+                // Display results
+                messageDiv.classList.add('hidden');
+                resultDiv.classList.remove('hidden');
+
+            } catch (error) {
+                // Display errors (like 404, invalid keys, or rate limits)
+                messageDiv.textContent = error.message;
+                messageDiv.classList.remove('hidden', 'text-slate-400');
+                messageDiv.classList.add('text-red-400');
+                resultDiv.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
